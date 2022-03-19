@@ -1,0 +1,9 @@
+1.- Known bugs:
+    When you are "painting" with clicked mouse, if you change window and
+    unclick outside the page, the pen goes on painting. We should add an event
+    to cause call mouseUp when changing window
+2.- I'll deviate from the assignment with a different pen behaviour: painting 
+    over already painted should have an influence on the saturation 
+    rather than on the light. Then, hue and light would be the random
+    parameters
+3.- Improve hueSum, satSum as for the comments
