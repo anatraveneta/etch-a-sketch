@@ -1,21 +1,23 @@
-/* Basic Parameters */
+/* Size of the grid in pixels*/
 const gridWidthPixels = 500;
 const gridHeightPixels = 500;
 
+/* Color parameters of the pen stroke in hsl */
 let strokeHue;
 let strokeSat;
-const strokeWeight = 10;
-let colorStroke;
+/* The following value represents the percentage by 
+which each layer of pen decreases the light */
+const strokeWeight = 10; // %. In the range [0-100]
 
-let gridWidthElements = 16; // Number of pixels in width
-let gridHeightElements = 16; // Number of pixels in height
+let gridWidthElements = 16; // Initial number of grid elements in width
+let gridHeightElements = 16; // Initial number of grid elements in height
 
-let elementWidth;
-let elementHeight;
+let elementWidth; // Size of each grid element in pixels: horizontal
+let elementHeight; // Size of each grid element in pixels: vertical
 
-let mouseClicked = false;
+let mouseClicked = false; // Mouse initially not clicked
 
-
+/* Create the pointers to the DOM elements */
 const gridContainer = document.querySelector(".grid-container");
 const clearButton = document.querySelector("#clean-button");
 const colorButton = document.querySelector("#color-button");
@@ -24,49 +26,56 @@ const clickListenArray = [
     document.querySelector('body')
 ];
 
+
+/* Define the grid size */
 gridContainer.setAttribute('style', `width:${gridWidthPixels}px;` +
         `height:${gridHeightPixels}px`);
 
+/* Add event listeners */
 clearButton.addEventListener('click', restartGrid);
 colorButton.addEventListener('click', setColorStroke);
-
 clickListenArray.forEach(element => {
     element.addEventListener('mousedown', mouseDown);
     element.addEventListener('mouseup', mouseUp);
 });
+window.addEventListener('blur', mouseUp);
 
-
+/* Draw the grid or the first time */
 initializeGrid();
 
-
-
  /* Functions */
+
+/* Draw the grid from the number of elements in
+    width and height. Start with white elements */ 
 function initializeGrid() {
     setColorStroke();
     elementWidth = computeElementWidth();
     elementHeight = computeElementHeight();
     for (let j=0; j < gridHeightElements; j++) {
         const rowDiv = makeDiv(gridContainer, "row");
-        let parent = rowDiv;
         rowDiv.setAttribute('id', `row${j}`);
         for (let i=0; i < gridWidthElements; i++) {
-            const pixelDiv = makeDiv(parent);
-            pixelDiv.setAttribute('id', `r${j}-c${i}`);
+            const gridElementDiv = makeDiv(rowDiv);
+            gridElementDiv.setAttribute('id', `r${j}-c${i}`);
         }
     }
 }
 
+/* Create divs of two types:
+    + rowContainer: hang from grid container and hold a row of grid elements
+    + gridElement: they hang from a rowContainer */
 function makeDiv(parent, divType="element") {
     const div = document.createElement('div');
     if (divType != "element") {
         div.classList.add("row-container");
     } else {
-        div.classList.add("pixel");
+        div.classList.add("grid-element");
         div.setAttribute('style', `width:${elementWidth}px;` +
         `height:${elementHeight}px`);
-        div.addEventListener('mouseenter', mouseEnterPixel);
+        div.addEventListener('mouseenter', mouseEnterGridElement);
         div.addEventListener('mousedown', mouseDown);
         div.addEventListener('mouseup', mouseUp);
+        div.addEventListener('dragstart', mouseUp);
     }
     parent.appendChild(div);
     return div;
@@ -75,28 +84,26 @@ function makeDiv(parent, divType="element") {
 /* Compute dimensions of each element taking into account that
     the borders of each element are 1px thick and there are
     two vertically and two horizontally per element */
-function computeElementWidth() {
+function computeElementWidth() { // Compute grid element width in pixels
     return gridWidthPixels/gridWidthElements-2;
 }
-
-function computeElementHeight() {
+function computeElementHeight() { // Compute grid element height in pixels
     return gridHeightPixels/gridHeightElements-2;
 }
 
+/* Erase rowContainers and gridElements*/
 function eraseGrid() {
     for (let j=0; j < gridHeightElements; j++) {
         const rowDiv = document.querySelector(`#row${j}`)
-        let parent = rowDiv;
         for (let i=0; i < gridWidthElements; i++) {
-            const pixelDiv = document.querySelector(`#r${j}-c${i}`)
-            parent.removeChild(pixelDiv);
+            const gridElementDiv = document.querySelector(`#r${j}-c${i}`)
+            rowDiv.removeChild(gridElementDiv);
         }
-        parent = gridContainer;
-        parent.removeChild(rowDiv);
+        gridContainer.removeChild(rowDiv);
     }
 }
 
-function mouseEnterPixel(e) {
+function mouseEnterGridElement(e) {
     paintElement(this);
 }
 
@@ -104,9 +111,9 @@ function paintElement(object) {
     const pattern = /^r[0-9]+-c[0-9]+$/;
     const idText = object.id;
     if (pattern.test(idText) && mouseClicked) {
-        const pixel = document.querySelector(`#${idText}`);
-        const currentColor = pixel.style.backgroundColor;
-        pixel.style.backgroundColor = computeColor(currentColor);
+        const gridElement = document.querySelector(`#${idText}`);
+        const currentColor = gridElement.style.backgroundColor;
+        gridElement.style.backgroundColor = computeColor(currentColor);
     }
 }
 
@@ -120,32 +127,49 @@ function computeColor(current) {
 }
 
 function hueSum(hsl1, hsl2) {
-    /* We can still improve this by taking into
-    account the l parameter in a ponderation */
+    /* This code makes a weighted average in the circular
+    dimension of the hue. The previous hue has a weight
+    equivalent of the number of strokes it carries. This
+    is computed by the complement of its light to 100 %.
+    The new hue is ponderated with one strokeWeight  */
     if (hsl1[0] == 0 && hsl1[1] == 0 && hsl1[2] == 100) {
         return hsl2[0];
     }
     let first = Math.min(hsl1[0], hsl2[0]);
     let second = Math.max(hsl1[0], hsl2[0]);
+    let wFirst;
+    let wSecond;
     if ((second - first) > 180) {
         const temp = second;
         second = first+360;
         first = temp;
     }
-    return ((first + second)/2)%360;
+    if (hsl1[0] == first%360) {
+        wFirst = (100-hsl1[2]);
+        wSecond = strokeWeight;
+    } else {
+        wFirst = strokeWeight;
+        wSecond = (100-hsl1[2]);
+    }
+    return ((wFirst*first + wSecond*second)/(wFirst + wSecond))%360;
 }
 
 function satSum(hsl1, hsl2) {
-    /* Oversimplistic, we have to improve 
-    by taking into account the l parameter */
+    /* We make also a weighted average as per the hue.
+    This time it is simpler because it is not in a polar
+    coordinate. */
     if (hsl1[0] == 0 && hsl1[1] == 0 && hsl1[2] == 100) {
         return hsl2[1];
     }
-    return (hsl1[1] + hsl2[1])/2;
+    const w1 = (100-hsl1[2]);
+    const w2 = strokeWeight;
+    return (w1*hsl1[1] + w2*hsl2[1])/(w1 + w2);
 }
 
 function lightSum(hsl1, hsl2) {
-    return Math.max(hsl1[2] - hsl2[2], 0);
+    /* We reduce the light by one stroke weight.
+    The value return cannot be smaller than 0. */
+    return Math.max(hsl1[2] - strokeWeight, 0);
 }
 
 function rgbToHsl(rgbStr) {
@@ -204,6 +228,9 @@ function mouseUp(e) {
 function setColorStroke() {
     strokeHue = Math.round(Math.random()*3600)/10;
     strokeSat = Math.round(Math.random()*100);
-    colorStroke = `hsl(${strokeHue}deg, ${strokeSat}%, ${100-strokeWeight}%)`;
+    /* Put a light of 50 % for the button background
+    This gives a better understanding of the color we will
+    get after several strokes */
+    const colorStroke = `hsl(${strokeHue}deg, ${strokeSat}%, ${50}%)`;
     colorButton.style.backgroundColor = colorStroke;
 }

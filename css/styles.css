@@ -17,7 +17,7 @@ body {
     justify-content: center;
 }
 
-.pixel {
+.grid-element {
     padding: none;
     border: solid lightgray 1px;
     background-color: white;

@@ -1,9 +1,6 @@
-1.- Known bugs:
-    When you are "painting" with clicked mouse, if you change window and
-    unclick outside the page, the pen goes on painting. We should add an event
-    to cause call mouseUp when changing window
-2.- I'll deviate from the assignment with a different pen behaviour: painting 
-    over already painted should have an influence on the saturation 
-    rather than on the light. Then, hue and light would be the random
-    parameters
-3.- Improve hueSum, satSum as for the comments
+1.- Finish comments and polish
+2.- Improve UI at least for a minimum: Tell a story like the app 
+    allows you to simulate painting on stained glass. Some nice pictures
+    of samples from cathedrals or the like will help.
+    In a later version, allow control over stroke weight, hue and saturation
+    instead of putting random or fixed parameters
