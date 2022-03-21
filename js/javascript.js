@@ -124,46 +124,59 @@ function computeColor(current) {
     return `hsl(${hueResult}deg, ${saturationResult}%, ${lightResult}%)`;
 }
 
-/* Make a weighted average in the circular
-    dimension of the hue. The previous hue has a weight
-    equivalent of the number of strokes it carries. This
-    is computed by the complement of its light to 100 %.
-    The new hue is ponderated with one strokeWeight  */
+/* Compute current number of layers on a grid element 
+    from its hsl background color parameters */
+function layersQuantity(hsl) {
+    return Math.round((100-hsl[2])/strokeWeight);
+}
+
+/* Make a weighted average by the saturation of each layer. 
+    The average is computed in a polar coordinate. */
 function hueSum(hsl) {
     if (hsl[1] == 0) {
         /* Return 100% of stroke hue when previous grid element
             background has no saturation (achromatic) */
         return strokeHue;
     }
+    if (strokeSaturation == 0) {
+        /* Return 100% of previous grid element background hue 
+            when stroke has no saturation (achromatic) */
+        return hsl[0];
+    }
+    const w1 = layersQuantity(hsl)*hsl[1];
+    const w2 = strokeSaturation;
     let first = Math.min(hsl[0], strokeHue);
     let second = Math.max(hsl[0], strokeHue);
     let wFirst;
     let wSecond;
+    /* The average is computed in the smallest angle between the
+        two colors */
     if ((second - first) > 180) {
         const temp = second;
         second = first + 360;
         first = temp;
     }
     if (hsl[0] == first%360) {
-        wFirst = (100-hsl[2]);
-        wSecond = strokeWeight;
+        wFirst = w1;
+        wSecond = w2;
     } else {
-        wFirst = strokeWeight;
-        wSecond = (100-hsl[2]);
+        wFirst = w2;
+        wSecond = w1;
     }
     return ((wFirst*first + wSecond*second)/(wFirst + wSecond))%360;
 }
 
 /* Make a weighted average as per the hue.
-    This time it is simpler because it is not in polar coordinate */
+    This time it is simpler because it is not in polar coordinate
+    and the weight is the quantity of layers */
 function satSum(hsl) {
     if (hsl[0] == 0 && hsl[1] == 0 && hsl[2] == 100) {
         /* Return 100% of stroke saturation when previous grid element
-            background is white */
+            background is white (we consider it as transparent) */
         return strokeSaturation;
     }
-    const w1 = (100-hsl[2]);
-    const w2 = strokeWeight;
+    const w1 = layersQuantity(hsl);
+    const w2 = 1;
     return (w1*hsl[1] + w2*strokeSaturation)/(w1 + w2);
 }
 
@@ -249,8 +262,8 @@ function mouseUp(e) {
     Light is the general constant parameter strokeWeight.
     Set colorButton background accirdingly. */
 function setColorStroke() {
-    strokeHue = Math.round(Math.random()*359);
-    strokeSaturation = Math.round(Math.random()*100);
+    strokeHue = Math.floor(Math.random()*359);
+    strokeSaturation = Math.floor(Math.random()*100);
     /* Put a light of 50 % for the button background in order
     to give a better understanding of the color after several strokes */
     const colorStroke = `hsl(${strokeHue}deg, ${strokeSaturation}%, ${50}%)`;

@@ -1,1 +1,1 @@
-Inhibit drag behaviour of grid element. Simplify paintElement and computeColor code. Add comments.
+Improve hueSum and saturationSum
