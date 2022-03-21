@@ -4,7 +4,7 @@ const gridHeightPixels = 500;
 
 /* Color parameters of the pen stroke in hsl */
 let strokeHue;
-let strokeSat;
+let strokeSaturation;
 /* The following value represents the percentage by 
 which each layer of pen decreases the light */
 const strokeWeight = 10; // %. In the range [0-100]
@@ -26,7 +26,6 @@ const clickListenArray = [
     document.querySelector('body')
 ];
 
-
 /* Define the grid size */
 gridContainer.setAttribute('style', `width:${gridWidthPixels}px;` +
         `height:${gridHeightPixels}px`);
@@ -38,9 +37,9 @@ clickListenArray.forEach(element => {
     element.addEventListener('mousedown', mouseDown);
     element.addEventListener('mouseup', mouseUp);
 });
-window.addEventListener('blur', mouseUp);
+window.addEventListener('blur', mouseUp); // Mouse up when window focus lost
 
-/* Draw the grid or the first time */
+/* Draw the grid for the first time */
 initializeGrid();
 
  /* Functions */
@@ -63,7 +62,7 @@ function initializeGrid() {
 
 /* Create divs of two types:
     + rowContainer: hang from grid container and hold a row of grid elements
-    + gridElement: they hang from a rowContainer */
+    + gridElement: hang from a rowContainer */
 function makeDiv(parent, divType="element") {
     const div = document.createElement('div');
     if (divType != "element") {
@@ -75,7 +74,6 @@ function makeDiv(parent, divType="element") {
         div.addEventListener('mouseenter', mouseEnterGridElement);
         div.addEventListener('mousedown', mouseDown);
         div.addEventListener('mouseup', mouseUp);
-        div.addEventListener('dragstart', mouseUp);
     }
     parent.appendChild(div);
     return div;
@@ -103,79 +101,86 @@ function eraseGrid() {
     }
 }
 
+/* When the mouse enters a grid element, evaluate if it
+    should change its background color */
 function mouseEnterGridElement(e) {
     paintElement(this);
 }
 
+/* Change background color of a grid element if mouse is clicked */
 function paintElement(object) {
-    const pattern = /^r[0-9]+-c[0-9]+$/;
-    const idText = object.id;
-    if (pattern.test(idText) && mouseClicked) {
-        const gridElement = document.querySelector(`#${idText}`);
-        const currentColor = gridElement.style.backgroundColor;
-        gridElement.style.backgroundColor = computeColor(currentColor);
-    }
+    const currentColor = object.style.backgroundColor;
+    if (mouseClicked) 
+        object.style.backgroundColor = computeColor(currentColor);
 }
 
+/* Compute color change of a grid element taking into account
+    its current color and the pen stroke parameters */
 function computeColor(current) {
     const currentHSL = rgbToHsl(current);
-    const strokeHSL = [strokeHue, strokeSat, strokeWeight];
-    const hueRes = hueSum(currentHSL, strokeHSL);
-    const satRes = satSum(currentHSL, strokeHSL);
-    const lightRes = lightSum(currentHSL, strokeHSL);
-    return `hsl(${hueRes}deg, ${satRes}%, ${lightRes}%)`;
+    const hueResult = hueSum(currentHSL);
+    const saturationResult = satSum(currentHSL);
+    const lightResult = lightSum(currentHSL);
+    return `hsl(${hueResult}deg, ${saturationResult}%, ${lightResult}%)`;
 }
 
-function hueSum(hsl1, hsl2) {
-    /* This code makes a weighted average in the circular
+/* Make a weighted average in the circular
     dimension of the hue. The previous hue has a weight
     equivalent of the number of strokes it carries. This
     is computed by the complement of its light to 100 %.
     The new hue is ponderated with one strokeWeight  */
-    if (hsl1[0] == 0 && hsl1[1] == 0 && hsl1[2] == 100) {
-        return hsl2[0];
+function hueSum(hsl) {
+    if (hsl[1] == 0) {
+        /* Return 100% of stroke hue when previous grid element
+            background has no saturation (achromatic) */
+        return strokeHue;
     }
-    let first = Math.min(hsl1[0], hsl2[0]);
-    let second = Math.max(hsl1[0], hsl2[0]);
+    let first = Math.min(hsl[0], strokeHue);
+    let second = Math.max(hsl[0], strokeHue);
     let wFirst;
     let wSecond;
     if ((second - first) > 180) {
         const temp = second;
-        second = first+360;
+        second = first + 360;
         first = temp;
     }
-    if (hsl1[0] == first%360) {
-        wFirst = (100-hsl1[2]);
+    if (hsl[0] == first%360) {
+        wFirst = (100-hsl[2]);
         wSecond = strokeWeight;
     } else {
         wFirst = strokeWeight;
-        wSecond = (100-hsl1[2]);
+        wSecond = (100-hsl[2]);
     }
     return ((wFirst*first + wSecond*second)/(wFirst + wSecond))%360;
 }
 
-function satSum(hsl1, hsl2) {
-    /* We make also a weighted average as per the hue.
-    This time it is simpler because it is not in a polar
-    coordinate. */
-    if (hsl1[0] == 0 && hsl1[1] == 0 && hsl1[2] == 100) {
-        return hsl2[1];
+/* Make a weighted average as per the hue.
+    This time it is simpler because it is not in polar coordinate */
+function satSum(hsl) {
+    if (hsl[0] == 0 && hsl[1] == 0 && hsl[2] == 100) {
+        /* Return 100% of stroke saturation when previous grid element
+            background is white */
+        return strokeSaturation;
     }
-    const w1 = (100-hsl1[2]);
+    const w1 = (100-hsl[2]);
     const w2 = strokeWeight;
-    return (w1*hsl1[1] + w2*hsl2[1])/(w1 + w2);
+    return (w1*hsl[1] + w2*strokeSaturation)/(w1 + w2);
 }
 
-function lightSum(hsl1, hsl2) {
-    /* We reduce the light by one stroke weight.
+/* Reduce the light by one stroke weight.
     The value return cannot be smaller than 0. */
-    return Math.max(hsl1[2] - strokeWeight, 0);
+function lightSum(hsl) {
+    return Math.max(hsl[2] - strokeWeight, 0);
 }
 
+/* Convert a string containing rgb values
+    of a color into hsl numeric array */
 function rgbToHsl(rgbStr) {
-    if (!rgbStr) return[0, 0, 100]
+    if (!rgbStr) return[0, 0, 100] // If empty, return white
     let [r, g, b] = rgbStrToArray(rgbStr);
-    r /= 255, g /= 255, b /= 255;
+    r /= 255;
+    g /= 255;
+    b /= 255;
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
     let h, s, l = (max + min) / 2;
 
@@ -192,15 +197,20 @@ function rgbToHsl(rgbStr) {
         h /= 6;
     }
 
-    return [Math.floor(h * 360), Math.floor(s * 100), Math.floor(l * 100)];
+    return [Math.floor(h * 360)%360, Math.floor(s * 100), Math.floor(l * 100)];
 }
 
+/* Convert the string returned by object.style.backgroundColor
+    method, into a numeric array containing the three
+    values of red, green, blue defining the color */
 function rgbStrToArray(rgbStr) {
     let rgbArray = rgbStr.slice(4, -1).split(", ");
     rgbArray = rgbArray.map(x => parseInt(x));
     return rgbArray;
 }
 
+/* Ask the user the grid size, erase old grid and
+    build a new white grid*/
 function restartGrid() {
     let n = askSize();
     if (n == 0) return;
@@ -210,27 +220,39 @@ function restartGrid() {
     initializeGrid();
 }
 
+/* Ask the user the grid size */
 function askSize() {
     let answer = Number(prompt("Enter the grid size (1 to 100)", "16"));
     answer = Math.round(answer);
     return answer > 0 && answer <= 100 && !isNaN(answer) && answer;
 }
 
+/* Toggle mouseClicked to true.
+    Paint the element if the event
+    is triggered from a grid element */
 function mouseDown(e) {
+    /* Avoid triggering the event from the
+        grid element parents' event listeners
+        (grid container, body) */ 
+    e.stopPropagation();
     mouseClicked = true;
-    paintElement(this);
+    if (this.getAttribute("class") == "grid-element") paintElement(this);
 }
 
+/* Toggle mouseClicked to false */
 function mouseUp(e) {
     mouseClicked = false;
 }
 
+/* Set stroke parameters in terms of HSL.
+    Hue and Saturation are fixed randomly.
+    Light is the general constant parameter strokeWeight.
+    Set colorButton background accirdingly. */
 function setColorStroke() {
-    strokeHue = Math.round(Math.random()*3600)/10;
-    strokeSat = Math.round(Math.random()*100);
-    /* Put a light of 50 % for the button background
-    This gives a better understanding of the color we will
-    get after several strokes */
-    const colorStroke = `hsl(${strokeHue}deg, ${strokeSat}%, ${50}%)`;
+    strokeHue = Math.round(Math.random()*359);
+    strokeSaturation = Math.round(Math.random()*100);
+    /* Put a light of 50 % for the button background in order
+    to give a better understanding of the color after several strokes */
+    const colorStroke = `hsl(${strokeHue}deg, ${strokeSaturation}%, ${50}%)`;
     colorButton.style.backgroundColor = colorStroke;
 }

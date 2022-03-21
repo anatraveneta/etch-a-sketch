@@ -1,5 +1,4 @@
-1.- Finish comments and polish
-2.- Improve UI at least for a minimum: Tell a story like the app 
+1.- Improve UI at least for a minimum: Tell a story like the app 
     allows you to simulate painting on stained glass. Some nice pictures
     of samples from cathedrals or the like will help.
     In a later version, allow control over stroke weight, hue and saturation
