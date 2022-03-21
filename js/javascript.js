@@ -23,7 +23,7 @@ const clearButton = document.querySelector("#clean-button");
 const colorButton = document.querySelector("#color-button");
 const clickListenArray = [
     gridContainer,
-    document.querySelector('body')
+    window
 ];
 
 /* Define the grid size */
@@ -187,7 +187,7 @@ function lightSum(hsl) {
 }
 
 /* Convert a string containing rgb values
-    of a color into hsl numeric array */
+    of a color into hsl numeric array. */
 function rgbToHsl(rgbStr) {
     if (!rgbStr) return[0, 0, 100] // If empty, return white
     let [r, g, b] = rgbStrToArray(rgbStr);
@@ -215,7 +215,7 @@ function rgbToHsl(rgbStr) {
 
 /* Convert the string returned by object.style.backgroundColor
     method, into a numeric array containing the three
-    values of red, green, blue defining the color */
+    values of red, green, blue defining the color. */
 function rgbStrToArray(rgbStr) {
     let rgbArray = rgbStr.slice(4, -1).split(", ");
     rgbArray = rgbArray.map(x => parseInt(x));
@@ -223,7 +223,7 @@ function rgbStrToArray(rgbStr) {
 }
 
 /* Ask the user the grid size, erase old grid and
-    build a new white grid*/
+    build a new white grid. */
 function restartGrid() {
     let n = askSize();
     if (n == 0) return;
@@ -233,7 +233,7 @@ function restartGrid() {
     initializeGrid();
 }
 
-/* Ask the user the grid size */
+/* Ask the user the grid size. */
 function askSize() {
     let answer = Number(prompt("Enter the grid size (1 to 100)", "16"));
     answer = Math.round(answer);
@@ -242,17 +242,21 @@ function askSize() {
 
 /* Toggle mouseClicked to true.
     Paint the element if the event
-    is triggered from a grid element */
+    is triggered from a grid element. */
 function mouseDown(e) {
     /* Avoid triggering the event from the
         grid element parents' event listeners
-        (grid container, body) */ 
+        (grid container, body). */ 
     e.stopPropagation();
     mouseClicked = true;
-    if (this.getAttribute("class") == "grid-element") paintElement(this);
+    if (this instanceof HTMLElement) {
+        if (this.getAttribute("class") == "grid-element") {
+            paintElement(this);
+        }
+    }
 }
 
-/* Toggle mouseClicked to false */
+/* Toggle mouseClicked to false. */
 function mouseUp(e) {
     mouseClicked = false;
 }
@@ -260,12 +264,12 @@ function mouseUp(e) {
 /* Set stroke parameters in terms of HSL.
     Hue and Saturation are fixed randomly.
     Light is the general constant parameter strokeWeight.
-    Set colorButton background accirdingly. */
+    Set colorButton background accordingly. */
 function setColorStroke() {
     strokeHue = Math.floor(Math.random()*359);
     strokeSaturation = Math.floor(Math.random()*100);
     /* Put a light of 50 % for the button background in order
-    to give a better understanding of the color after several strokes */
+    to give a better understanding of the color after several strokes. */
     const colorStroke = `hsl(${strokeHue}deg, ${strokeSaturation}%, ${50}%)`;
     colorButton.style.backgroundColor = colorStroke;
 }

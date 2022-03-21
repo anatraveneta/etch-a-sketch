@@ -1,5 +1,9 @@
 1.- Improve UI at least for a minimum: Tell a story like the app 
     allows you to simulate painting on stained glass. Some nice pictures
     of samples from cathedrals or the like will help.
-    In a later version, allow control over stroke weight, hue and saturation
-    instead of putting random or fixed parameters
+    
+2.- In a later version, allow control over stroke weight, hue and saturation
+    instead of putting random or fixed parameters. In this case, treat
+    the grey scale in a different way: allow to select achromatic as hue.
+    The saturation is determined by (100 - light) and strokeWeight ponderates
+    the former

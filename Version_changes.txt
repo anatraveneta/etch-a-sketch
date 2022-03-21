@@ -1,1 +1,35 @@
-Improve hueSum and saturationSum
+Improve solution to the two previous bugs
+
+These known bus were drag problem and mouseUp out of focus problem.
+They subsisted in the area below the grid container.
+
+* First point
+In the previous attempt, we tried to fix the drag bug by adding a
+draggable="false" attribute at div level. Without success.
+
+
+Then we thought we had solved it by adding
+the following code at <body> level in the html file:
+
+ondragstart="return false;" ondrop="return false;"
+
+This fixed the bug when dragging on the grid container, in the 
+lateral espace around it or above it.
+
+Both pieces of code were found on stock overflow:
+
+https://stackoverflow.com/questions/704564/
+disable-drag-and-drop-on-html-elements
+
+Then, we realized that dragging was still allowed
+in the bottom of the page, below the grid container. So we moved the 
+code at html level:
+
+<html lang="en" draggable="false"
+    ondragstart="return false;" ondrop="return false;">
+
+The event listener was also moved from body element to window.
+The mouseDown function has been modified to sort out triggering
+from the window.
+
+This fixed both problems.
